@@ -1,0 +1,64 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dotOnline {
+  background-color: var(--color-success);
+}
+
+.dotError {
+  background-color: var(--color-danger);
+}
+
+.dotDisconnected {
+  background-color: #6b7280;
+}
+
+.dotConnecting {
+  background-color: #d97706;
+}
+
+.dotPulsing {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.textOnline {
+  font-size: var(--font-size-sm);
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.textError {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.textDisconnected {
+  font-size: var(--font-size-sm);
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.textConnecting {
+  font-size: var(--font-size-sm);
+  color: #b45309;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.6; transform: scale(0.9); }
+}

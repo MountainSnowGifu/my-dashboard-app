@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Edit",
+      "MultiEdit",
+      "Read",
+      "Bash(npm run lint)",
+      "Bash(npm run test *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm create:*)",
+      "Bash(printf 'y\\\\n')",
+      "Bash(npx create-vite@latest /home/akira/デスクトップ/React/haskell-budget-tracker --template react-ts)",
+      "Bash(npx --yes create-vite@latest . --template react-ts)",
+      "Bash(npm --version)",
+      "Bash(mkdir -p /tmp/vite-scaffold)",
+      "Read(//tmp/**)",
+      "Bash(npx --yes create-vite@latest myapp --template react-ts)",
+      "Bash(DEST=\"/home/akira/デスクトップ/React/haskell-budget-tracker\")",
+      "Bash(cp -r /tmp/vite-scaffold/myapp/. \"$DEST/\")",
+      "Read(//home/akira/デスクトップ/React/haskell-budget-tracker/**)",
+      "Bash(mkdir -p \"/home/akira/デスクトップ/React/haskell-budget-tracker/src/types\")",
+      "Bash(mkdir -p \"/home/akira/デスクトップ/React/haskell-budget-tracker/src/lib\")",
+      "Bash(mkdir -p \"/home/akira/デスクトップ/React/haskell-budget-tracker/src/store\")",
+      "Bash(mkdir -p \"/home/akira/デスクトップ/React/haskell-budget-tracker/src/pages\")",
+      "Bash(npm list:*)",
+      "Bash(echo \"EXIT:$?\")"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *)",
+      "WebFetch"
+    ],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "/home/akira/デスクトップ/React/haskell-habit-tracking/habit-tracker-frontend/src"
+    ]
+  }
+}

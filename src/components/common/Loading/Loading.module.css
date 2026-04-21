@@ -1,0 +1,45 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+}
+
+.fullPage {
+  min-height: 100dvh;
+}
+
+.spinner {
+  border-radius: 50%;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  animation: spin 0.7s linear infinite;
+}
+
+.sm {
+  width: 20px;
+  height: 20px;
+}
+
+.md {
+  width: 32px;
+  height: 32px;
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+}
+
+.message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
