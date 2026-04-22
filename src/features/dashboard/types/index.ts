@@ -40,12 +40,30 @@ export interface SqlServerDbStatusDashboard {
 
 export type SqlServerDbStatusDashboardList = SqlServerDbStatusDashboard[];
 
+export interface SqlServerBlockStatus {
+  bsResBlockingSessionId: number;
+  bsResCommand: string;
+  bsResDatabaseName: string;
+  bsResHostName: string;
+  bsResLoginName: string;
+  bsResProgramName: string;
+  bsResSessionId: number;
+  bsResSqlText: string;
+  bsResStatus: string;
+  bsResWaitResource: string;
+  bsResWaitTime: string;
+  bsResWaitType: string;
+}
+
+export type SqlServerBlockStatusList = SqlServerBlockStatus[];
+
 export interface SqlServerDbHealthDashboard {
-  sqlServerDbName: string;
+  dbHealthSqlServerDbName: string;
   mssqlDbStatusDashboard: SqlServerDbStatusDashboard;
   mssqlFileIoDashboard: SqlServerDashboardList;
   mssqlSessionDashboard: SqlServerSessionDashboard;
   mssqlActiveRequestDashboard: SqlServerActiveRequestList;
+  mssqlBlockStatusDashboard: SqlServerBlockStatusList;
 }
 
 export interface SqlServerOverallPerformanceDashboard {

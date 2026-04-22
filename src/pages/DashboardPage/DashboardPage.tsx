@@ -35,6 +35,7 @@ export function DashboardPage() {
     sessions,
     activeRequests,
     dbStatuses,
+    blockStatuses,
     serverMeta,
     overallPerformances,
     status,
@@ -80,6 +81,7 @@ export function DashboardPage() {
         } | null;
         rows: NonNullable<typeof data>;
         activeRequests: NonNullable<typeof activeRequests>;
+        blockStatuses: NonNullable<typeof blockStatuses>;
       }
     >();
 
@@ -91,6 +93,7 @@ export function DashboardPage() {
         dbStatus: null,
         rows: [],
         activeRequests: [],
+        blockStatuses: [],
       };
       group.rows.push(row);
       groups.set(dbName, group);
@@ -104,6 +107,7 @@ export function DashboardPage() {
         dbStatus: null,
         rows: [],
         activeRequests: [],
+        blockStatuses: [],
       };
       group.sessionCount = session.sessionCount;
       groups.set(dbName, group);
@@ -117,6 +121,7 @@ export function DashboardPage() {
         dbStatus: null,
         rows: [],
         activeRequests: [],
+        blockStatuses: [],
       };
       group.activeRequests.push(request);
       groups.set(dbName, group);
@@ -130,12 +135,27 @@ export function DashboardPage() {
         dbStatus: null,
         rows: [],
         activeRequests: [],
+        blockStatuses: [],
       };
       group.dbStatus = {
         state: statusRow.dbsStateDesc,
         access: statusRow.dbsUserAccessDesc,
         recoveryModel: statusRow.dbsRecoveryModelDesc,
       };
+      groups.set(dbName, group);
+    });
+
+    (blockStatuses ?? []).forEach((bs) => {
+      const dbName = bs.bsResDatabaseName;
+      const group = groups.get(dbName) ?? {
+        dbName,
+        sessionCount: 0,
+        dbStatus: null,
+        rows: [],
+        activeRequests: [],
+        blockStatuses: [],
+      };
+      group.blockStatuses.push(bs);
       groups.set(dbName, group);
     });
 
@@ -158,7 +178,7 @@ export function DashboardPage() {
         if (aOnline !== bOnline) return aOnline - bOnline;
         return a.dbName.localeCompare(b.dbName, "ja");
       });
-  }, [activeRequests, data, dbStatuses, sessions]);
+  }, [activeRequests, blockStatuses, data, dbStatuses, sessions]);
 
   const isSectionCollapsed = (group: (typeof groupedData)[number]) =>
     !expandedSections.has(group.dbName);
@@ -577,6 +597,86 @@ export function DashboardPage() {
                             <p className={styles.noActiveRequests}>
                               No active requests
                             </p>
+                          )}
+
+                          {group.blockStatuses.length > 0 && (
+                            <>
+                              <div className={styles.subSectionHeader}>
+                                <h4 className={styles.subSectionTitle}>
+                                  Block Status
+                                </h4>
+                              </div>
+                              <div className={styles.tableWrapper}>
+                                <table className={styles.table}>
+                                  <thead>
+                                    <tr>
+                                      <th className={styles.th}>Session ID</th>
+                                      <th className={styles.th}>
+                                        Blocking Session ID
+                                      </th>
+                                      <th className={styles.th}>Command</th>
+                                      <th className={styles.th}>Status</th>
+                                      <th className={styles.th}>Wait Type</th>
+                                      <th className={styles.th}>
+                                        Wait Time (ms)
+                                      </th>
+                                      <th className={styles.th}>
+                                        Wait Resource
+                                      </th>
+                                      <th className={styles.th}>SQL Text</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.blockStatuses.map((row) => {
+                                      const waitTimeNum = parseInt(
+                                        row.bsResWaitTime,
+                                        10,
+                                      );
+                                      const waitTimeDisplay = Number.isNaN(
+                                        waitTimeNum,
+                                      )
+                                        ? row.bsResWaitTime
+                                        : waitTimeNum.toLocaleString();
+                                      return (
+                                        <tr
+                                          key={`${group.dbName}-block-${row.bsResSessionId}-${row.bsResBlockingSessionId}`}
+                                          className={styles.tr}
+                                        >
+                                          <td className={styles.tdNum}>
+                                            {row.bsResSessionId}
+                                          </td>
+                                          <td className={styles.tdNum}>
+                                            {row.bsResBlockingSessionId}
+                                          </td>
+                                          <td className={styles.td}>
+                                            {row.bsResCommand}
+                                          </td>
+                                          <td className={styles.td}>
+                                            <span
+                                              className={`${styles.requestStatusBadge} ${getRequestStatusClassName(row.bsResStatus)}`}
+                                            >
+                                              {row.bsResStatus}
+                                            </span>
+                                          </td>
+                                          <td className={styles.td}>
+                                            {row.bsResWaitType}
+                                          </td>
+                                          <td className={styles.tdNum}>
+                                            {waitTimeDisplay}
+                                          </td>
+                                          <td className={styles.td}>
+                                            {row.bsResWaitResource}
+                                          </td>
+                                          <td className={styles.td}>
+                                            {row.bsResSqlText}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
                           )}
                         </>
                       )}

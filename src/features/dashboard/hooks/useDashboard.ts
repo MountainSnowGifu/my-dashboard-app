@@ -13,6 +13,8 @@ import type {
   SqlServerDbStatusDashboardList,
   SqlServerDbHealthDashboard,
   SqlServerOverallPerformanceDashboard,
+  SqlServerBlockStatus,
+  SqlServerBlockStatusList,
 } from '@/features/dashboard/types';
 import { dashboardWsUrl } from '@/features/dashboard/api/dashboardApi';
 
@@ -74,6 +76,25 @@ const isDbStatusRow = (value: unknown): value is SqlServerDbStatusDashboard => {
   );
 };
 
+const isBlockStatusRow = (value: unknown): value is SqlServerBlockStatus => {
+  if (typeof value !== 'object' || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.bsResBlockingSessionId === 'number' &&
+    typeof row.bsResCommand === 'string' &&
+    typeof row.bsResDatabaseName === 'string' &&
+    typeof row.bsResHostName === 'string' &&
+    typeof row.bsResLoginName === 'string' &&
+    typeof row.bsResProgramName === 'string' &&
+    typeof row.bsResSessionId === 'number' &&
+    typeof row.bsResSqlText === 'string' &&
+    typeof row.bsResStatus === 'string' &&
+    typeof row.bsResWaitResource === 'string' &&
+    typeof row.bsResWaitTime === 'string' &&
+    typeof row.bsResWaitType === 'string'
+  );
+};
+
 const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboard => {
   if (typeof value !== 'object' || value === null) return false;
   const row = value as Record<string, unknown>;
@@ -82,13 +103,15 @@ const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboar
   const validSession = isSessionRow(row.mssqlSessionDashboard);
   const validActive = Array.isArray(row.mssqlActiveRequestDashboard) && row.mssqlActiveRequestDashboard.every(isActiveRequestRow);
   const validDbStatus = isDbStatusRow(row.mssqlDbStatusDashboard);
+  const validBlockStatus = Array.isArray(row.mssqlBlockStatusDashboard) && row.mssqlBlockStatusDashboard.every(isBlockStatusRow);
 
   return (
-    typeof row.sqlServerDbName === 'string' &&
+    typeof row.dbHealthSqlServerDbName === 'string' &&
     validDbStatus &&
     validFileIo &&
     validSession &&
-    validActive
+    validActive &&
+    validBlockStatus
   );
 };
 
@@ -131,6 +154,7 @@ type NormalizedPayload = {
   sessions: SqlServerSessionDashboardList;
   activeRequests: SqlServerActiveRequestList;
   dbStatuses: SqlServerDbStatusDashboardList;
+  blockStatuses: SqlServerBlockStatusList;
   meta: SqlServerMeta | null;
   overallPerformances: SqlServerOverallPerformanceDashboard[];
 };
@@ -152,18 +176,20 @@ const normalizeDashboardPayload = (payload: unknown): NormalizedPayload => {
   const rows = health.mssqlDbHealthDashboards.flatMap((db) =>
     db.mssqlFileIoDashboard.map((row) => ({
       ...row,
-      parentSqlServerDbName: db.sqlServerDbName,
+      parentSqlServerDbName: db.dbHealthSqlServerDbName,
     }))
   );
   const sessions = health.mssqlDbHealthDashboards.map((db) => db.mssqlSessionDashboard);
   const activeRequests = health.mssqlDbHealthDashboards.flatMap((db) => db.mssqlActiveRequestDashboard);
   const dbStatuses = health.mssqlDbHealthDashboards.map((db) => db.mssqlDbStatusDashboard);
+  const blockStatuses = health.mssqlDbHealthDashboards.flatMap((db) => db.mssqlBlockStatusDashboard);
 
   return {
     rows,
     sessions,
     activeRequests,
     dbStatuses,
+    blockStatuses,
     meta:
       typeof health.sqlServerIp === 'string' &&
       typeof health.sqlServerPort === 'number'
@@ -184,6 +210,7 @@ export function useSqlServerDashboard() {
   const [sessions, setSessions] = useState<SqlServerSessionDashboardList | null>(null);
   const [activeRequests, setActiveRequests] = useState<SqlServerActiveRequestList | null>(null);
   const [dbStatuses, setDbStatuses] = useState<SqlServerDbStatusDashboardList | null>(null);
+  const [blockStatuses, setBlockStatuses] = useState<SqlServerBlockStatusList>([]);
   const [serverMeta, setServerMeta] = useState<SqlServerMeta | null>(null);
   const [overallPerformances, setOverallPerformances] = useState<SqlServerOverallPerformanceDashboard[]>([]);
   const [status, setStatus] = useState<WsStatus>('connecting');
@@ -224,6 +251,7 @@ export function useSqlServerDashboard() {
         setSessions(parsed.sessions);
         setActiveRequests(parsed.activeRequests);
         setDbStatuses(parsed.dbStatuses);
+        setBlockStatuses(parsed.blockStatuses);
         setServerMeta(parsed.meta);
         setOverallPerformances(parsed.overallPerformances);
         setDataUpdatedAt(Date.now());
@@ -329,6 +357,7 @@ export function useSqlServerDashboard() {
     sessions,
     activeRequests,
     dbStatuses,
+    blockStatuses,
     serverMeta,
     overallPerformances,
     status,
