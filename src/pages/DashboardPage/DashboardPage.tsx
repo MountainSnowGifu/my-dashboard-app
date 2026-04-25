@@ -3,6 +3,7 @@ import {
   useSqlServerDashboard,
   useSqlServerConnections,
 } from "@/features/dashboard/hooks/useDashboard";
+import type { MssqlLogUsageDashboard } from "@/features/dashboard/types";
 import { ServerInfoPanel } from "@/features/dashboard/components/ServerInfoPanel";
 import { DashboardStatusBadge } from "@/features/dashboard/components/DashboardStatusBadge";
 import { DashboardErrorBanner } from "@/features/dashboard/components/DashboardErrorBanner";
@@ -38,6 +39,7 @@ export function DashboardPage() {
     blockStatuses,
     serverMeta,
     overallPerformances,
+    logUsages,
     status,
     error,
     dataUpdatedAt,
@@ -82,6 +84,7 @@ export function DashboardPage() {
         rows: NonNullable<typeof data>;
         activeRequests: NonNullable<typeof activeRequests>;
         blockStatuses: NonNullable<typeof blockStatuses>;
+        logUsage: MssqlLogUsageDashboard | null;
       }
     >();
 
@@ -94,6 +97,7 @@ export function DashboardPage() {
         rows: [],
         activeRequests: [],
         blockStatuses: [],
+        logUsage: null,
       };
       group.rows.push(row);
       groups.set(dbName, group);
@@ -108,6 +112,7 @@ export function DashboardPage() {
         rows: [],
         activeRequests: [],
         blockStatuses: [],
+        logUsage: null,
       };
       group.sessionCount = session.sessionCount;
       groups.set(dbName, group);
@@ -122,6 +127,7 @@ export function DashboardPage() {
         rows: [],
         activeRequests: [],
         blockStatuses: [],
+        logUsage: null,
       };
       group.activeRequests.push(request);
       groups.set(dbName, group);
@@ -136,6 +142,7 @@ export function DashboardPage() {
         rows: [],
         activeRequests: [],
         blockStatuses: [],
+        logUsage: null,
       };
       group.dbStatus = {
         state: statusRow.dbsStateDesc,
@@ -154,15 +161,18 @@ export function DashboardPage() {
         rows: [],
         activeRequests: [],
         blockStatuses: [],
+        logUsage: null,
       };
       group.blockStatuses.push(bs);
       groups.set(dbName, group);
     });
 
+    const logUsageMap = new Map(logUsages.map((lu) => [lu.lugSqlServerDbName, lu]));
     return Array.from(groups.values())
       .map((group) => ({
         ...group,
         rows: group.rows,
+        logUsage: logUsageMap.get(group.dbName) ?? null,
         activeRequests: [...group.activeRequests].sort((a, b) => {
           const aBlocked =
             a.arStatus.trim().toLowerCase() === "blocked" ? 0 : 1;
@@ -178,7 +188,7 @@ export function DashboardPage() {
         if (aOnline !== bOnline) return aOnline - bOnline;
         return a.dbName.localeCompare(b.dbName, "ja");
       });
-  }, [activeRequests, blockStatuses, data, dbStatuses, sessions]);
+  }, [activeRequests, blockStatuses, data, dbStatuses, sessions, logUsages]);
 
   const isSectionCollapsed = (group: (typeof groupedData)[number]) =>
     !expandedSections.has(group.dbName);
@@ -457,6 +467,43 @@ export function DashboardPage() {
 
                       {!collapsed && (
                         <>
+                          {group.logUsage && (
+                            <>
+                              <div className={styles.subSectionHeader}>
+                                <h4 className={styles.subSectionTitle}>Log Usage</h4>
+                              </div>
+                              <div className={styles.logUsageSection}>
+                                <div className={styles.logUsageBarRow}>
+                                  <div className={styles.logUsageBar}>
+                                    <div
+                                      className={`${styles.logUsageBarFill} ${
+                                        group.logUsage.lugAlertLevel.toUpperCase() === 'DANGER'
+                                          ? styles.logUsageBarFillDanger
+                                          : group.logUsage.lugAlertLevel.toUpperCase() === 'WARNING'
+                                          ? styles.logUsageBarFillWarning
+                                          : styles.logUsageBarFillOk
+                                      }`}
+                                      style={{ width: `${Math.min(group.logUsage.lugUsedLogSpacePercent, 100)}%` }}
+                                    />
+                                  </div>
+                                  <span
+                                    className={`${styles.logAlertBadge} ${
+                                      group.logUsage.lugAlertLevel.toUpperCase() === 'DANGER'
+                                        ? styles.logAlertDanger
+                                        : group.logUsage.lugAlertLevel.toUpperCase() === 'WARNING'
+                                        ? styles.logAlertWarning
+                                        : styles.logAlertOk
+                                    }`}
+                                  >
+                                    {group.logUsage.lugAlertLevel}
+                                  </span>
+                                </div>
+                                <span className={styles.logUsageMeta}>
+                                  {group.logUsage.lugUsedLogSpaceMB.toFixed(2)} MB / {group.logUsage.lugTotalLogSizeMB.toFixed(2)} MB ({group.logUsage.lugUsedLogSpacePercent.toFixed(1)}%)
+                                </span>
+                              </div>
+                            </>
+                          )}
                           <div className={styles.tableWrapper}>
                             <table className={styles.table}>
                               <thead>

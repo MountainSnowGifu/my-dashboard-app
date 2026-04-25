@@ -15,6 +15,7 @@ import type {
   SqlServerOverallPerformanceDashboard,
   SqlServerBlockStatus,
   SqlServerBlockStatusList,
+  MssqlLogUsageDashboard,
 } from '@/features/dashboard/types';
 import { dashboardWsUrl } from '@/features/dashboard/api/dashboardApi';
 
@@ -95,6 +96,18 @@ const isBlockStatusRow = (value: unknown): value is SqlServerBlockStatus => {
   );
 };
 
+const isLogUsageRow = (value: unknown): value is MssqlLogUsageDashboard => {
+  if (typeof value !== 'object' || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.lugAlertLevel === 'string' &&
+    typeof row.lugSqlServerDbName === 'string' &&
+    typeof row.lugTotalLogSizeMB === 'number' &&
+    typeof row.lugUsedLogSpaceMB === 'number' &&
+    typeof row.lugUsedLogSpacePercent === 'number'
+  );
+};
+
 const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboard => {
   if (typeof value !== 'object' || value === null) return false;
   const row = value as Record<string, unknown>;
@@ -104,6 +117,7 @@ const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboar
   const validActive = Array.isArray(row.mssqlActiveRequestDashboard) && row.mssqlActiveRequestDashboard.every(isActiveRequestRow);
   const validDbStatus = isDbStatusRow(row.mssqlDbStatusDashboard);
   const validBlockStatus = Array.isArray(row.mssqlBlockStatusDashboard) && row.mssqlBlockStatusDashboard.every(isBlockStatusRow);
+  const validLogUsage = isLogUsageRow(row.mssqlLogUsageDashboardResponse);
 
   return (
     typeof row.dbHealthSqlServerDbName === 'string' &&
@@ -111,7 +125,8 @@ const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboar
     validFileIo &&
     validSession &&
     validActive &&
-    validBlockStatus
+    validBlockStatus &&
+    validLogUsage
   );
 };
 
@@ -157,6 +172,7 @@ type NormalizedPayload = {
   blockStatuses: SqlServerBlockStatusList;
   meta: SqlServerMeta | null;
   overallPerformances: SqlServerOverallPerformanceDashboard[];
+  logUsages: MssqlLogUsageDashboard[];
 };
 
 const normalizeDashboardPayload = (payload: unknown): NormalizedPayload => {
@@ -202,6 +218,7 @@ const normalizeDashboardPayload = (payload: unknown): NormalizedPayload => {
           }
         : null,
     overallPerformances: normalizeOverallPerformance(health.mssqlOverallPerformanceDashboard),
+    logUsages: health.mssqlDbHealthDashboards.map((db) => db.mssqlLogUsageDashboardResponse),
   };
 };
 
@@ -213,6 +230,7 @@ export function useSqlServerDashboard() {
   const [blockStatuses, setBlockStatuses] = useState<SqlServerBlockStatusList>([]);
   const [serverMeta, setServerMeta] = useState<SqlServerMeta | null>(null);
   const [overallPerformances, setOverallPerformances] = useState<SqlServerOverallPerformanceDashboard[]>([]);
+  const [logUsages, setLogUsages] = useState<MssqlLogUsageDashboard[]>([]);
   const [status, setStatus] = useState<WsStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const [dataUpdatedAt, setDataUpdatedAt] = useState<number | null>(null);
@@ -252,6 +270,7 @@ export function useSqlServerDashboard() {
         setActiveRequests(parsed.activeRequests);
         setDbStatuses(parsed.dbStatuses);
         setBlockStatuses(parsed.blockStatuses);
+        setLogUsages(parsed.logUsages);
         setServerMeta(parsed.meta);
         setOverallPerformances(parsed.overallPerformances);
         setDataUpdatedAt(Date.now());
@@ -360,6 +379,7 @@ export function useSqlServerDashboard() {
     blockStatuses,
     serverMeta,
     overallPerformances,
+    logUsages,
     status,
     error,
     dataUpdatedAt,

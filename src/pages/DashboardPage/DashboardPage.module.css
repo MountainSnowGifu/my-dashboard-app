@@ -341,6 +341,82 @@
   margin-top: var(--spacing-md);
 }
 
+.logUsageSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) 0;
+}
+
+.logUsageBarRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.logUsageBar {
+  flex: 1;
+  height: 8px;
+  background-color: var(--color-bg-secondary);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.logUsageBarFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.logUsageBarFillOk {
+  background-color: var(--color-success);
+}
+
+.logUsageBarFillWarning {
+  background-color: #b45309;
+}
+
+.logUsageBarFillDanger {
+  background-color: var(--color-danger);
+}
+
+.logUsageMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.logAlertBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.logAlertOk {
+  color: #146c43;
+  background-color: #d1e7dd;
+  border-color: #a3cfbb;
+}
+
+.logAlertWarning {
+  color: #8a4b00;
+  background-color: #ffe8c2;
+  border-color: #ffcc80;
+}
+
+.logAlertDanger {
+  color: #842029;
+  background-color: #f8d7da;
+  border-color: #f1aeb5;
+}
+
 @media (max-width: 920px) {
   .pageHeader {
     flex-direction: column;

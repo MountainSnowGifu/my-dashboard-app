@@ -57,6 +57,14 @@ export interface SqlServerBlockStatus {
 
 export type SqlServerBlockStatusList = SqlServerBlockStatus[];
 
+export interface MssqlLogUsageDashboard {
+  lugAlertLevel: string;
+  lugSqlServerDbName: string;
+  lugTotalLogSizeMB: number;
+  lugUsedLogSpaceMB: number;
+  lugUsedLogSpacePercent: number;
+}
+
 export interface SqlServerDbHealthDashboard {
   dbHealthSqlServerDbName: string;
   mssqlDbStatusDashboard: SqlServerDbStatusDashboard;
@@ -64,6 +72,7 @@ export interface SqlServerDbHealthDashboard {
   mssqlSessionDashboard: SqlServerSessionDashboard;
   mssqlActiveRequestDashboard: SqlServerActiveRequestList;
   mssqlBlockStatusDashboard: SqlServerBlockStatusList;
+  mssqlLogUsageDashboardResponse: MssqlLogUsageDashboard;
 }
 
 export interface SqlServerOverallPerformanceDashboard {
