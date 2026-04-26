@@ -17,6 +17,7 @@ export function Header() {
         >
           <IconMenu />
         </button>
+        <span className={styles.productTitle}>SQL Server Monitor</span>
       </div>
 
       <div className={styles.right}>

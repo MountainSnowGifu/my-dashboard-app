@@ -65,6 +65,16 @@ export interface MssqlLogUsageDashboard {
   lugUsedLogSpacePercent: number;
 }
 
+export interface MssqlBackupDashboard {
+  bakBackupFinishDate: string;
+  bakBackupStartDate: string;
+  bakBackupType: string;
+  bakPhysicalDeviceName: string;
+  bakServerName: string;
+  bakSqlServerDbName: string;
+  bakUserName: string;
+}
+
 export interface SqlServerDbHealthDashboard {
   dbHealthSqlServerDbName: string;
   mssqlDbStatusDashboard: SqlServerDbStatusDashboard;
@@ -73,6 +83,7 @@ export interface SqlServerDbHealthDashboard {
   mssqlActiveRequestDashboard: SqlServerActiveRequestList;
   mssqlBlockStatusDashboard: SqlServerBlockStatusList;
   mssqlLogUsageDashboardResponse: MssqlLogUsageDashboard;
+  mssqlBackupDashboardResponse: MssqlBackupDashboard[];
 }
 
 export interface SqlServerOverallPerformanceDashboard {

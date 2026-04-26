@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--spacing-sm);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -19,7 +19,8 @@
 /* Variants */
 .primary {
   background-color: var(--color-primary);
-  color: #fff;
+  color: #001407;
+  border-color: var(--color-primary);
 }
 
 .primary:hover:not(:disabled) {
@@ -27,14 +28,15 @@
 }
 
 .secondary {
-  background-color: var(--color-bg-tertiary);
+  background-color: var(--color-terminal-surface);
   color: var(--color-text);
   border-color: var(--color-border);
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-primary-ghost);
   border-color: var(--color-border-hover);
+  color: var(--color-primary);
 }
 
 .danger {

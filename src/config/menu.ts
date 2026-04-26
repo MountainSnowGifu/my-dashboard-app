@@ -5,5 +5,5 @@ export interface MenuItem {
 }
 
 export const menuItems: MenuItem[] = [
-  { path: "/dashboard", label: "Database", icon: "dashboard" },
+  { path: "/dashboard", label: "dashboard", icon: "dashboard" },
 ];

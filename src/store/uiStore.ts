@@ -15,7 +15,7 @@ export const useUiStore = create<UiState>((set) => ({
     typeof window !== 'undefined'
       ? window.matchMedia('(min-width: 769px)').matches
       : true,
-  theme: (localStorage.getItem('theme') as Theme) ?? 'light',
+  theme: (localStorage.getItem('theme') as Theme) ?? 'dark',
 
   toggleSidebar: () => {
     set((state) => ({ sidebarOpen: !state.sidebarOpen }));

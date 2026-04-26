@@ -13,5 +13,8 @@
 .content {
   flex: 1;
   padding: var(--spacing-lg);
-  background-color: var(--color-bg-secondary);
+  background:
+    linear-gradient(var(--color-scanline) 1px, transparent 1px),
+    var(--color-bg-secondary);
+  background-size: 100% 32px;
 }

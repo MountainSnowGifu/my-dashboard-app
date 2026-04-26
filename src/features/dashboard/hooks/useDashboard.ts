@@ -16,6 +16,7 @@ import type {
   SqlServerBlockStatus,
   SqlServerBlockStatusList,
   MssqlLogUsageDashboard,
+  MssqlBackupDashboard,
 } from '@/features/dashboard/types';
 import { dashboardWsUrl } from '@/features/dashboard/api/dashboardApi';
 
@@ -108,6 +109,20 @@ const isLogUsageRow = (value: unknown): value is MssqlLogUsageDashboard => {
   );
 };
 
+const isBackupRow = (value: unknown): value is MssqlBackupDashboard => {
+  if (typeof value !== 'object' || value === null) return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.bakBackupFinishDate === 'string' &&
+    typeof row.bakBackupStartDate === 'string' &&
+    typeof row.bakBackupType === 'string' &&
+    typeof row.bakPhysicalDeviceName === 'string' &&
+    typeof row.bakServerName === 'string' &&
+    typeof row.bakSqlServerDbName === 'string' &&
+    typeof row.bakUserName === 'string'
+  );
+};
+
 const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboard => {
   if (typeof value !== 'object' || value === null) return false;
   const row = value as Record<string, unknown>;
@@ -118,6 +133,7 @@ const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboar
   const validDbStatus = isDbStatusRow(row.mssqlDbStatusDashboard);
   const validBlockStatus = Array.isArray(row.mssqlBlockStatusDashboard) && row.mssqlBlockStatusDashboard.every(isBlockStatusRow);
   const validLogUsage = isLogUsageRow(row.mssqlLogUsageDashboardResponse);
+  const validBackups = Array.isArray(row.mssqlBackupDashboardResponse) && row.mssqlBackupDashboardResponse.every(isBackupRow);
 
   return (
     typeof row.dbHealthSqlServerDbName === 'string' &&
@@ -126,7 +142,8 @@ const isDbHealthDashboard = (value: unknown): value is SqlServerDbHealthDashboar
     validSession &&
     validActive &&
     validBlockStatus &&
-    validLogUsage
+    validLogUsage &&
+    validBackups
   );
 };
 
@@ -173,6 +190,7 @@ type NormalizedPayload = {
   meta: SqlServerMeta | null;
   overallPerformances: SqlServerOverallPerformanceDashboard[];
   logUsages: MssqlLogUsageDashboard[];
+  backups: MssqlBackupDashboard[];
 };
 
 const normalizeDashboardPayload = (payload: unknown): NormalizedPayload => {
@@ -219,6 +237,7 @@ const normalizeDashboardPayload = (payload: unknown): NormalizedPayload => {
         : null,
     overallPerformances: normalizeOverallPerformance(health.mssqlOverallPerformanceDashboard),
     logUsages: health.mssqlDbHealthDashboards.map((db) => db.mssqlLogUsageDashboardResponse),
+    backups: health.mssqlDbHealthDashboards.flatMap((db) => db.mssqlBackupDashboardResponse),
   };
 };
 
@@ -231,6 +250,7 @@ export function useSqlServerDashboard() {
   const [serverMeta, setServerMeta] = useState<SqlServerMeta | null>(null);
   const [overallPerformances, setOverallPerformances] = useState<SqlServerOverallPerformanceDashboard[]>([]);
   const [logUsages, setLogUsages] = useState<MssqlLogUsageDashboard[]>([]);
+  const [backups, setBackups] = useState<MssqlBackupDashboard[]>([]);
   const [status, setStatus] = useState<WsStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const [dataUpdatedAt, setDataUpdatedAt] = useState<number | null>(null);
@@ -271,6 +291,7 @@ export function useSqlServerDashboard() {
         setDbStatuses(parsed.dbStatuses);
         setBlockStatuses(parsed.blockStatuses);
         setLogUsages(parsed.logUsages);
+        setBackups(parsed.backups);
         setServerMeta(parsed.meta);
         setOverallPerformances(parsed.overallPerformances);
         setDataUpdatedAt(Date.now());
@@ -337,12 +358,12 @@ export function useSqlServerDashboard() {
 
   const reconnect = useCallback(() => {
     shouldReconnectRef.current = true;
+    intentionalCloseRef.current = false;
     retryCountRef.current = 0;
     setRetryCount(0);
     setNextRetryAt(null);
     if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     if (wsRef.current) {
-      intentionalCloseRef.current = true;
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -355,6 +376,7 @@ export function useSqlServerDashboard() {
     setRetryCount(0);
     setNextRetryAt(null);
     setError('Disconnected manually');
+    setStatus('disconnected');
 
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -365,10 +387,7 @@ export function useSqlServerDashboard() {
       intentionalCloseRef.current = true;
       wsRef.current.close();
       wsRef.current = null;
-      return;
     }
-
-    setStatus('disconnected');
   }, []);
 
   return {
@@ -380,6 +399,7 @@ export function useSqlServerDashboard() {
     serverMeta,
     overallPerformances,
     logUsages,
+    backups,
     status,
     error,
     dataUpdatedAt,

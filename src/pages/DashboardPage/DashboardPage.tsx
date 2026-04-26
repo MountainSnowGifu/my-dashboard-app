@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
   useSqlServerDashboard,
   useSqlServerConnections,
 } from "@/features/dashboard/hooks/useDashboard";
-import type { MssqlLogUsageDashboard } from "@/features/dashboard/types";
+import type {
+  MssqlBackupDashboard,
+  MssqlLogUsageDashboard,
+} from "@/features/dashboard/types";
 import { ServerInfoPanel } from "@/features/dashboard/components/ServerInfoPanel";
 import { DashboardStatusBadge } from "@/features/dashboard/components/DashboardStatusBadge";
 import { DashboardErrorBanner } from "@/features/dashboard/components/DashboardErrorBanner";
@@ -26,9 +29,22 @@ const ELAPSED_DANGER_MS = 30_000;
 const CPU_WARN_MS = 5_000;
 const CPU_DANGER_MS = 30_000;
 
-type DashboardTab = "databases" | "connections" | "websocket";
+type DashboardTab = "databases" | "performance" | "connections";
 
-const TAB_ORDER: DashboardTab[] = ["databases", "websocket", "connections"];
+const TAB_ORDER: DashboardTab[] = ["databases", "performance", "connections"];
+
+const formatBackupDateTime = (value: string) => {
+  const date = new Date(value.replace(" ", "T"));
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(date);
+};
 
 export function DashboardPage() {
   const {
@@ -40,6 +56,7 @@ export function DashboardPage() {
     serverMeta,
     overallPerformances,
     logUsages,
+    backups,
     status,
     error,
     dataUpdatedAt,
@@ -55,6 +72,27 @@ export function DashboardPage() {
   );
   const [activeTab, setActiveTab] = useState<DashboardTab>("databases");
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
+  const actionMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const actionMenuItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    if (!isActionMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!actionMenuRef.current?.contains(e.target as Node)) {
+        setIsActionMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isActionMenuOpen]);
+
+  useEffect(() => {
+    if (isActionMenuOpen) {
+      actionMenuItemRefs.current[0]?.focus();
+    }
+  }, [isActionMenuOpen]);
 
   useEffect(() => {
     if (!nextRetryAt) {
@@ -85,6 +123,7 @@ export function DashboardPage() {
         activeRequests: NonNullable<typeof activeRequests>;
         blockStatuses: NonNullable<typeof blockStatuses>;
         logUsage: MssqlLogUsageDashboard | null;
+        backups: MssqlBackupDashboard[];
       }
     >();
 
@@ -98,6 +137,7 @@ export function DashboardPage() {
         activeRequests: [],
         blockStatuses: [],
         logUsage: null,
+        backups: [],
       };
       group.rows.push(row);
       groups.set(dbName, group);
@@ -113,6 +153,7 @@ export function DashboardPage() {
         activeRequests: [],
         blockStatuses: [],
         logUsage: null,
+        backups: [],
       };
       group.sessionCount = session.sessionCount;
       groups.set(dbName, group);
@@ -128,6 +169,7 @@ export function DashboardPage() {
         activeRequests: [],
         blockStatuses: [],
         logUsage: null,
+        backups: [],
       };
       group.activeRequests.push(request);
       groups.set(dbName, group);
@@ -143,6 +185,7 @@ export function DashboardPage() {
         activeRequests: [],
         blockStatuses: [],
         logUsage: null,
+        backups: [],
       };
       group.dbStatus = {
         state: statusRow.dbsStateDesc,
@@ -162,17 +205,28 @@ export function DashboardPage() {
         activeRequests: [],
         blockStatuses: [],
         logUsage: null,
+        backups: [],
       };
       group.blockStatuses.push(bs);
       groups.set(dbName, group);
     });
 
     const logUsageMap = new Map(logUsages.map((lu) => [lu.lugSqlServerDbName, lu]));
+    const backupMap = new Map<string, MssqlBackupDashboard[]>();
+    backups.forEach((backup) => {
+      const rows = backupMap.get(backup.bakSqlServerDbName) ?? [];
+      rows.push(backup);
+      backupMap.set(backup.bakSqlServerDbName, rows);
+    });
+
     return Array.from(groups.values())
       .map((group) => ({
         ...group,
         rows: group.rows,
         logUsage: logUsageMap.get(group.dbName) ?? null,
+        backups: [...(backupMap.get(group.dbName) ?? [])].sort((a, b) =>
+          b.bakBackupFinishDate.localeCompare(a.bakBackupFinishDate),
+        ),
         activeRequests: [...group.activeRequests].sort((a, b) => {
           const aBlocked =
             a.arStatus.trim().toLowerCase() === "blocked" ? 0 : 1;
@@ -188,7 +242,7 @@ export function DashboardPage() {
         if (aOnline !== bOnline) return aOnline - bOnline;
         return a.dbName.localeCompare(b.dbName, "ja");
       });
-  }, [activeRequests, blockStatuses, data, dbStatuses, sessions, logUsages]);
+  }, [activeRequests, backups, blockStatuses, data, dbStatuses, sessions, logUsages]);
 
   const isSectionCollapsed = (group: (typeof groupedData)[number]) =>
     !expandedSections.has(group.dbName);
@@ -252,6 +306,42 @@ export function DashboardPage() {
     document.getElementById(`dashboard-tab-${nextTab}`)?.focus();
   };
 
+  const handleActionMenuKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    const items = actionMenuItemRefs.current.filter(
+      (item): item is HTMLButtonElement => Boolean(item && !item.disabled),
+    );
+    const activeIndex = items.findIndex((item) => item === document.activeElement);
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setIsActionMenuOpen(false);
+      actionMenuButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const direction = event.key === "ArrowDown" ? 1 : -1;
+      const nextIndex =
+        activeIndex === -1
+          ? 0
+          : (activeIndex + direction + items.length) % items.length;
+      items[nextIndex]?.focus();
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      items[0]?.focus();
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  };
+
   const showErrorBanner =
     serverMeta?.isServerAlive?.trim().toLowerCase() === "no" ||
     status === "error" ||
@@ -293,7 +383,7 @@ export function DashboardPage() {
       )}
 
       <div className={styles.pageHeader}>
-        <h2 className={styles.title}>SQL Server</h2>
+        <h1 className={styles.title}>SQL Server</h1>
         <div className={styles.headerRight}>
           <ServerInfoPanel
             sqlServerIp={serverMeta?.sqlServerIp}
@@ -306,7 +396,7 @@ export function DashboardPage() {
             retryCountdown={retryCountdown}
           />
           <span className={styles.lastUpdated}>
-            Last updated: {lastUpdated}
+            Updated {lastUpdated}
           </span>
           <Button
             type="button"
@@ -314,21 +404,47 @@ export function DashboardPage() {
             size="sm"
             className={styles.actionButton}
             onClick={() => reconnect()}
-            aria-label="Reconnect WebSocket"
+            aria-label="Reconnect monitoring"
           >
             <IconRefresh />
             <span>Reconnect</span>
           </Button>
-          <Button
-            type="button"
-            variant="danger"
-            size="sm"
-            onClick={() => setIsDisconnectModalOpen(true)}
-            aria-label="Disconnect WebSocket"
-            disabled={status === "disconnected"}
-          >
-            <span>Disconnect</span>
-          </Button>
+          <div className={styles.actionMenu} ref={actionMenuRef}>
+            <Button
+              ref={actionMenuButtonRef}
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsActionMenuOpen((p) => !p)}
+              aria-label="Connection actions"
+              aria-expanded={isActionMenuOpen}
+              aria-haspopup="menu"
+            >
+              •••
+            </Button>
+            {isActionMenuOpen && (
+              <div
+                className={styles.actionMenuDropdown}
+                role="menu"
+                onKeyDown={handleActionMenuKeyDown}
+              >
+                <button
+                  ref={(element) => {
+                    actionMenuItemRefs.current[0] = element;
+                  }}
+                  role="menuitem"
+                  className={styles.actionMenuItem}
+                  disabled={status === "disconnected"}
+                  onClick={() => {
+                    setIsDisconnectModalOpen(true);
+                    setIsActionMenuOpen(false);
+                  }}
+                >
+                  <span>Disconnect</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -350,16 +466,16 @@ export function DashboardPage() {
           Databases
         </button>
         <button
-          id="dashboard-tab-websocket"
+          id="dashboard-tab-performance"
           role="tab"
-          aria-selected={activeTab === "websocket"}
+          aria-selected={activeTab === "performance"}
           aria-controls="dashboard-panel-overall-performance"
-          tabIndex={activeTab === "websocket" ? 0 : -1}
-          className={`${styles.tab} ${activeTab === "websocket" ? styles.tabActive : ""}`}
-          onClick={() => setActiveTab("websocket")}
-          onKeyDown={(event) => handleTabKeyDown(event, "websocket")}
+          tabIndex={activeTab === "performance" ? 0 : -1}
+          className={`${styles.tab} ${activeTab === "performance" ? styles.tabActive : ""}`}
+          onClick={() => setActiveTab("performance")}
+          onKeyDown={(event) => handleTabKeyDown(event, "performance")}
         >
-          Overall Performance
+          Performance
         </button>
         <button
           id="dashboard-tab-connections"
@@ -371,7 +487,7 @@ export function DashboardPage() {
           onClick={() => setActiveTab("connections")}
           onKeyDown={(event) => handleTabKeyDown(event, "connections")}
         >
-          WebSocket
+          Connections
         </button>
       </div>
 
@@ -400,25 +516,32 @@ export function DashboardPage() {
       <section
         id="dashboard-panel-overall-performance"
         role="tabpanel"
-        aria-labelledby="dashboard-tab-websocket"
+        aria-labelledby="dashboard-tab-performance"
         tabIndex={0}
-        hidden={activeTab !== "websocket"}
+        hidden={activeTab !== "performance"}
       >
-        <div className={styles.overallGrid}>
-          {overallPerformances.map((metric, index) => (
-            <Card
-              className={styles.metricCard}
-              key={`${metric.pdbObjectName}-${metric.pdbCounterName}-${metric.pdbInstanceName || index}`}
-            >
-              <p className={styles.metricObject}>{metric.pdbObjectName}</p>
-              <p className={styles.metricCounter}>{metric.pdbCounterName}</p>
-              <p className={styles.cardValue}>
-                {metric.pdbCounterValue.toLocaleString()}
-              </p>
-              <p className={styles.cardMeta}>{metric.pdbInstanceName || "-"}</p>
-            </Card>
-          ))}
-        </div>
+        {overallPerformances.length > 0 ? (
+          <div className={styles.overallGrid}>
+            {overallPerformances.map((metric, index) => (
+              <Card
+                className={styles.metricCard}
+                key={`${metric.pdbObjectName}-${metric.pdbCounterName}-${metric.pdbInstanceName || index}`}
+              >
+                <p className={styles.metricObject}>{metric.pdbObjectName}</p>
+                <p className={styles.metricCounter}>{metric.pdbCounterName}</p>
+                <p className={styles.cardValue}>
+                  {metric.pdbCounterValue.toLocaleString()}
+                </p>
+                <p className={styles.cardMeta}>{metric.pdbInstanceName || "-"}</p>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            <IconAlert />
+            <span>No performance data</span>
+          </div>
+        )}
       </section>
 
       <section
@@ -443,6 +566,7 @@ export function DashboardPage() {
                         className={styles.dbTitleRow}
                         onClick={() => toggleSection(group.dbName)}
                         aria-expanded={!collapsed}
+                        aria-label={`${collapsed ? "Expand" : "Collapse"} ${group.dbName} database details`}
                       >
                         <span
                           className={`${styles.chevron} ${collapsed ? styles.chevronCollapsed : ""}`}
@@ -450,16 +574,25 @@ export function DashboardPage() {
                           ▼
                         </span>
                         <h3 className={styles.dbTitle}>{group.dbName}</h3>
-                        <span
-                          className={`${styles.dbMetaInline} ${group.dbStatus ? (isOnline ? styles.stateOnline : styles.stateOffline) : styles.dbMeta}`}
-                        >
-                          Sessions: {group.sessionCount.toLocaleString()}
+                        <span className={styles.dbMetaInline}>
+                          <span className={styles.dbMetaChip}>
+                            Sessions: {group.sessionCount.toLocaleString()}
+                          </span>
                           {group.dbStatus && (
                             <>
-                              {" "}
-                              | State: {group.dbStatus.state} | Access:{" "}
-                              {group.dbStatus.access} | Recovery:{" "}
-                              {group.dbStatus.recoveryModel}
+                              <span
+                                className={`${styles.dbMetaChip} ${
+                                  isOnline ? styles.stateOnline : styles.stateOffline
+                                }`}
+                              >
+                                State: {group.dbStatus.state}
+                              </span>
+                              <span className={styles.dbMetaChip}>
+                                Access: {group.dbStatus.access}
+                              </span>
+                              <span className={styles.dbMetaChip}>
+                                Recovery: {group.dbStatus.recoveryModel}
+                              </span>
                             </>
                           )}
                         </span>
@@ -470,7 +603,9 @@ export function DashboardPage() {
                           {group.logUsage && (
                             <>
                               <div className={styles.subSectionHeader}>
-                                <h4 className={styles.subSectionTitle}>Log Usage</h4>
+                                <h4 className={styles.subSectionTitle}>
+                                  Log Usage
+                                </h4>
                               </div>
                               <div className={styles.logUsageSection}>
                                 <div className={styles.logUsageBarRow}>
@@ -504,6 +639,7 @@ export function DashboardPage() {
                               </div>
                             </>
                           )}
+
                           <div className={styles.tableWrapper}>
                             <table className={styles.table}>
                               <thead>
@@ -720,6 +856,57 @@ export function DashboardPage() {
                                         </tr>
                                       );
                                     })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </>
+                          )}
+
+                          {group.backups.length > 0 && (
+                            <>
+                              <div className={styles.subSectionHeader}>
+                                <h4 className={styles.subSectionTitle}>
+                                  Backup History
+                                </h4>
+                              </div>
+                              <div className={styles.tableWrapper}>
+                                <table className={styles.table}>
+                                  <thead>
+                                    <tr>
+                                      <th className={styles.th}>Type</th>
+                                      <th className={styles.th}>Started</th>
+                                      <th className={styles.th}>Finished</th>
+                                      <th className={styles.th}>User</th>
+                                      <th className={styles.th}>Server</th>
+                                      <th className={styles.th}>Device</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {group.backups.map((backup) => (
+                                      <tr
+                                        key={`${group.dbName}-${backup.bakBackupFinishDate}-${backup.bakPhysicalDeviceName}`}
+                                        className={styles.tr}
+                                      >
+                                        <td className={styles.td}>
+                                          {backup.bakBackupType}
+                                        </td>
+                                        <td className={styles.td}>
+                                          {formatBackupDateTime(backup.bakBackupStartDate)}
+                                        </td>
+                                        <td className={styles.td}>
+                                          {formatBackupDateTime(backup.bakBackupFinishDate)}
+                                        </td>
+                                        <td className={styles.td}>
+                                          {backup.bakUserName}
+                                        </td>
+                                        <td className={styles.td}>
+                                          {backup.bakServerName}
+                                        </td>
+                                        <td className={styles.tdPath}>
+                                          {backup.bakPhysicalDeviceName}
+                                        </td>
+                                      </tr>
+                                    ))}
                                   </tbody>
                                 </table>
                               </div>

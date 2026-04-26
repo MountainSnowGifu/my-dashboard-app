@@ -30,7 +30,7 @@ export function Sidebar() {
       >
         <div className={styles.logo}>
           <span className={styles.logoText}>
-            {sidebarOpen ? "Dashboard" : "M"}
+            {sidebarOpen ? "Dashboard" : "D"}
           </span>
         </div>
         <nav className={styles.nav}>
