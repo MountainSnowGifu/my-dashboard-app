@@ -4,11 +4,13 @@
   justify-content: space-between;
   height: var(--header-height);
   padding: 0 var(--spacing-lg);
-  background-color: var(--color-header-bg);
+  background-color: var(--color-matrix-chrome-bg);
   border-bottom: 1px solid var(--color-border);
   position: sticky;
   top: 0;
   z-index: 100;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.24);
 }
 
 .left {
@@ -70,6 +72,12 @@
 .themeToggle:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+.toggleActive {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background-color: var(--color-primary-ghost-strong);
 }
 
 @media (max-width: 560px) {

@@ -23,6 +23,20 @@ export const IconSun = ({ size = 16, ...props }: IconProps) => (
   </svg>
 );
 
+export const IconMatrixRain = ({ size = 16, ...props }: IconProps) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
+    <path d="M5 4v16" />
+    <path d="M12 2v18" />
+    <path d="M19 5v16" />
+    <path d="M4 8h2" />
+    <path d="M11 6h2" />
+    <path d="M18 10h2" />
+    <path d="M4 15h2" />
+    <path d="M11 13h2" />
+    <path d="M18 17h2" />
+  </svg>
+);
+
 export const IconLogout = ({ size = 16, ...props }: IconProps) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

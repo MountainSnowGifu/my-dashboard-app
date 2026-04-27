@@ -1,10 +1,12 @@
 import styles from "./Header.module.css";
 import { useUiStore } from "@/store";
 import { useTheme } from "@/app/providers/ThemeProvider";
-import { IconMenu, IconMoon, IconSun } from "@/components/icons";
+import { IconMatrixRain, IconMenu, IconMoon, IconSun } from "@/components/icons";
 
 export function Header() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const matrixRainEnabled = useUiStore((s) => s.matrixRainEnabled);
+  const toggleMatrixRain = useUiStore((s) => s.toggleMatrixRain);
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -21,6 +23,19 @@ export function Header() {
       </div>
 
       <div className={styles.right}>
+        <button
+          className={`${styles.themeToggle} ${matrixRainEnabled ? styles.toggleActive : ""}`}
+          onClick={toggleMatrixRain}
+          aria-pressed={matrixRainEnabled}
+          aria-label={
+            matrixRainEnabled ? "Turn matrix rain off" : "Turn matrix rain on"
+          }
+        >
+          <span className={styles.iconWrap}>
+            <IconMatrixRain />
+          </span>
+          <span>{matrixRainEnabled ? "Rain on" : "Rain off"}</span>
+        </button>
         <button
           className={styles.themeToggle}
           onClick={toggleTheme}

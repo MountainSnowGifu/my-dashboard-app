@@ -36,6 +36,8 @@
   --color-terminal-surface-muted: #f8fafc;
   --color-terminal-header: #f1f5f9;
   --color-header-bg: rgba(255, 255, 255, 0.94);
+  --color-matrix-chrome-bg: rgba(255, 255, 255, 0.9);
+  --color-matrix-content-overlay: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.94));
   --color-scanline: transparent;
   --color-selection-bg: rgba(37, 99, 235, 0.18);
   --color-scrollbar-track: #edf2f7;
@@ -116,15 +118,17 @@
   --color-danger-border: #7f1d1d;
   --color-danger-text: #ff9aa3;
 
-  --color-bg: #050505;
-  --color-bg-secondary: #0a0f0c;
-  --color-bg-tertiary: #111b15;
-  --color-bg-primary: #050805;
-  --color-terminal-surface: #020402;
-  --color-terminal-surface-muted: #061008;
-  --color-terminal-header: #061008;
-  --color-header-bg: rgba(5, 5, 5, 0.94);
-  --color-scanline: rgba(0, 255, 136, 0.025);
+  --color-bg: #000;
+  --color-bg-secondary: #020805;
+  --color-bg-tertiary: #07150c;
+  --color-bg-primary: rgba(0, 9, 4, 0.82);
+  --color-terminal-surface: rgba(0, 7, 3, 0.82);
+  --color-terminal-surface-muted: rgba(1, 18, 8, 0.84);
+  --color-terminal-header: rgba(3, 22, 10, 0.94);
+  --color-header-bg: rgba(0, 8, 4, 0.88);
+  --color-matrix-chrome-bg: rgba(0, 8, 4, 0.88);
+  --color-matrix-content-overlay: linear-gradient(180deg, rgba(0, 0, 0, 0.74), rgba(0, 14, 8, 0.84));
+  --color-scanline: rgba(0, 255, 136, 0.04);
   --color-selection-bg: rgba(0, 255, 136, 0.28);
   --color-scrollbar-track: #020402;
   --color-primary-ghost: rgba(0, 255, 136, 0.08);
@@ -132,7 +136,7 @@
   --color-text: #e8fff2;
   --color-text-secondary: #b7f7d2;
   --color-text-muted: #6fb98f;
-  --color-border: #133820;
+  --color-border: rgba(0, 255, 136, 0.24);
   --color-border-hover: #00ff88;
   --shadow-sm: 0 0 0 1px rgba(0, 255, 136, 0.04);
   --shadow-md: 0 0 24px rgba(0, 255, 136, 0.08);

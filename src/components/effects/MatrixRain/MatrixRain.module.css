@@ -1,0 +1,15 @@
+.matrixRain {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(0, 255, 136, 0.14), transparent 28%),
+    linear-gradient(180deg, #000 0%, #020805 46%, #000 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matrixRain {
+    display: none;
+  }
+}
